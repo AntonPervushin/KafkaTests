@@ -1,5 +1,7 @@
+using KafkaTests.Abstractions;
 using KafkaTests.Abstractions.Persistence;
 using KafkaTests.Implementations.Persistence;
+using KafkaTests.Producer.Processing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -9,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,7 +33,12 @@ namespace KafkaTests.Producer
         {
             services.AddControllers();
 
-            services.AddScoped<IOperationResultRepository>(( x ) => { return new RedisOperationResultRepository(); });
+            GlobalSettings.SetFromEnvironment();
+            Console.WriteLine($"Config: {JsonConvert.SerializeObject(GlobalSettings.Config)}");
+
+            var redisRepository = new RedisOperationResultRepository(GlobalSettings.Config.RedisUrl);
+            services.AddSingleton<IOperationResultRepository>(( x ) => redisRepository);
+            services.AddSingleton<IProducerProcessing>((x) => new ProducerProcessing(redisRepository, GlobalSettings.Config.KafkaTopic, GlobalSettings.Config.KafkaUrl));
 
             services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "Operations", Version = "v1" }));
         }

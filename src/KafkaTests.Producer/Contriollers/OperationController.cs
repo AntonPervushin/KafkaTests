@@ -12,10 +12,12 @@ namespace KafkaTests.Producer.Controllers
     public class OperationController : ControllerBase
     {
         private readonly IOperationResultRepository _operationResultRepository;
+        private readonly IProducerProcessing _processing;
 
-        public OperationController(IOperationResultRepository operationResultRepository)
+        public OperationController(IOperationResultRepository operationResultRepository, IProducerProcessing processing)
         {
             _operationResultRepository = operationResultRepository;
+            _processing = processing;
         }
 
         [HttpGet]
@@ -28,7 +30,6 @@ namespace KafkaTests.Producer.Controllers
         [HttpPost]
         public OperationResultDto Post(CreateOperationDto dto)
         {
-            var producer = new ProducerProcessing(_operationResultRepository);
-            return producer.Start(dto);        }
+            return _processing.Start(dto);        }
     }
 }

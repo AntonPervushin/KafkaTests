@@ -1,0 +1,20 @@
+bin/kafka-topics.sh --list  --zookeeper localhost:2181
+
+bin/kafka-topics.sh --describe --topic test-topic --bootstrap-server localhost:9092
+
+bin/kafka-consumer-groups.sh  --list --bootstrap-server localhost:9092
+
+bin/kafka-consumer-groups.sh --describe --group mygroup --bootstrap-server localhost:9092
+
+sudo docker build --tag kafka-test-img .
+
+sudo docker run -d -e KAFKA_TOPIC='test-topic' -e KAFKA_PARTITIONS='8' --name kafka-test --rm -p 6379:6379 -p 9092:9092 kafka-test-img
+sudo docker run -d -e KAFKA_TOPIC='test-topic' -e KAFKA_URL='localhost:9092' -e REDIS_URL='localhost:6379' --name kafka-test-producer --rm --net=host kafka-test-producer-img
+
+sudo docker exec -it kafka-test bash
+
+sudo docker stop kafka-test
+
+sudo docker run -d -e KAFKA_TOPIC='test-topic' -e KAFKA_URL='localhost:9092'  --name kafka-test-producer --rm -p 44305:80 --net=host kafka-test-producer-img
+
+sudo docker run -d -e KAFKA_TOPIC='test-topic' -e KAFKA_URL='localhost:9092' -e CLIENT_GROUP='server-1' --name kafka-test-consumer --rm --net=host kafka-test-consumer-img

@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using KafkaTests.Abstractions;
 using KafkaTests.Abstractions.Models;
 using KafkaTests.Implementations;
 using KafkaTests.Implementations.Persistence;
@@ -13,39 +14,39 @@ namespace KafkaTests.Consumer
     {
         static void Main(string[] args)
         {
+            GlobalSettings.SetFromEnvironment();
+
             var cts = new CancellationTokenSource();
             var ctsToken = cts.Token;
 
 
             var workerTask = Task.Run(() => DoWork(ctsToken), ctsToken).ContinueWith(t => CheckComplete(t));
-            var waiterTask = Task.Run(() => CheckExit(cts), ctsToken).ContinueWith(t => CheckComplete(t));
 
             try
             {
-                Task.WaitAny(new[] { workerTask, waiterTask });
+                Task.WaitAny(new[] { workerTask });
             }
             finally
             {
                 cts.Dispose();
             }
-
-            Console.WriteLine("Press any key to exit");
-            Console.ReadKey();
         }
 
         private static void DoWork(CancellationToken cancellationToken)
         {
-            var topic = "test-topic";
+            var topic = GlobalSettings.Config.KafkaTopic;
             var config = new ConsumerConfig
             {
-                BootstrapServers = "127.0.0.1:9092",
-                GroupId = "service-1",
+                BootstrapServers = GlobalSettings.Config.KafkaUrl,
+                GroupId = GlobalSettings.Config.ClientGroup,
                 AutoOffsetReset = AutoOffsetReset.Latest
             };
 
+            Console.WriteLine($"Config: {JsonConvert.SerializeObject(GlobalSettings.Config)}");
+
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (var processing = new OperationStepOrderedProcessing(new RedisOperationResultRepository()))
+            using (var processing = new OperationStepOrderedProcessing(new RedisOperationResultRepository(GlobalSettings.Config.RedisUrl)))
             {
                 using (var consumer = new ConsumerBuilder<Ignore, string>(config).Build())
                 {
@@ -86,15 +87,6 @@ namespace KafkaTests.Consumer
             };
             result = JsonConvert.DeserializeObject<T>(@this, settings);
             return success;
-        }
-
-        private static void CheckExit(CancellationTokenSource cts)
-        {
-            while (true)
-            {
-                var key = Console.ReadKey();
-                if (key.Key == ConsoleKey.Q) cts.Cancel();
-            }
         }
 
         private static void CheckComplete(Task task)

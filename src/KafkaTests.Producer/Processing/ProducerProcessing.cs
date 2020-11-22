@@ -7,23 +7,24 @@ using System;
 
 namespace KafkaTests.Producer.Processing
 {
-    public class ProducerProcessing
+    public class ProducerProcessing : IProducerProcessing
     {
         private readonly IOperationResultRepository _operationResultRepository;
+        private readonly string _kafkaTopic;
+        private readonly ProducerConfig _config;
 
-        public ProducerProcessing(IOperationResultRepository operationResultRepository)
+        public ProducerProcessing(IOperationResultRepository operationResultRepository, string kafkaTopic, string kafkaUrl)
         {
             _operationResultRepository = operationResultRepository;
+            _kafkaTopic = kafkaTopic;
+            _config = new ProducerConfig
+            {
+                BootstrapServers = kafkaUrl
+            };
         }
 
         public OperationResultDto Start(CreateOperationDto dto)
         {
-            var topic = "test-topic";
-            var config = new ProducerConfig
-            {
-                BootstrapServers = "127.0.0.1:9092"
-            };
-
             var operationId = Guid.NewGuid();
 
             var resultState = new OperationResultDto(operationId);
@@ -33,11 +34,11 @@ namespace KafkaTests.Producer.Processing
 
             if (dto.IsOrdered)
             {
-                using (var producer = new ProducerBuilder<string, string>(config).Build())
+                using (var producer = new ProducerBuilder<string, string>(_config).Build())
                 {
                     for(var i = dto.StepNumberFrom; i <= dto.MaxStep; i++)
                     {
-                        producer.Produce(topic, new Message<string, string> { Key = key, Value = ProvideMessage(key, operationId, i, dto.MaxStep) });
+                        producer.Produce(_kafkaTopic, new Message<string, string> { Key = key, Value = ProvideMessage(key, operationId, i, dto.MaxStep) });
                     }
 
                     producer.Flush();
@@ -45,11 +46,11 @@ namespace KafkaTests.Producer.Processing
             }
             else
             {
-                using (var producer = new ProducerBuilder<Null, string>(config).Build())
+                using (var producer = new ProducerBuilder<Null, string>(_config).Build())
                 {
                     for (var i = dto.StepNumberFrom; i <= dto.MaxStep; i++)
                     {
-                        producer.Produce(topic, new Message<Null, string> { Value = ProvideMessage(key, operationId, i, dto.MaxStep) });
+                        producer.Produce(_kafkaTopic, new Message<Null, string> { Value = ProvideMessage(key, operationId, i, dto.MaxStep) });
                     }
 
                     producer.Flush();

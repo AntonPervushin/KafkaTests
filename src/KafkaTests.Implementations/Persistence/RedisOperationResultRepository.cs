@@ -9,9 +9,9 @@ namespace KafkaTests.Implementations.Persistence
     public class RedisOperationResultRepository : IOperationResultRepository
     {
         private readonly ConnectionMultiplexer _redis;
-        public RedisOperationResultRepository()
+        public RedisOperationResultRepository(string url)
         {
-            _redis = ConnectionMultiplexer.Connect("localhost:6379");
+            _redis = ConnectionMultiplexer.Connect(url);
         }
 
         public OperationResultDto Get(Guid id)
