@@ -4,7 +4,7 @@ bin/kafka-topics.sh --describe --topic test-topic --bootstrap-server localhost:9
 
 bin/kafka-consumer-groups.sh  --list --bootstrap-server localhost:9092
 
-bin/kafka-consumer-groups.sh --describe --group mygroup --bootstrap-server localhost:9092
+bin/kafka-consumer-groups.sh --describe --group service-1 --bootstrap-server localhost:9092
 
 sudo docker build --tag kafka-test-img .
 

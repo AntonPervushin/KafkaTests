@@ -1,0 +1,38 @@
+version: "3"
+
+services:
+    infrastructure:
+        build: Infrastructure/
+        restart: always
+        environment:
+            - KAFKA_TOPIC=test-topic
+            - KAFKA_PARTITIONS=4
+        ports:
+            - 6379:6379
+            - 9092:9092
+            
+    producer:
+        network_mode: "host"
+        build: 
+            context: src/
+            dockerfile: Dockerfile-producer
+        restart: always
+        environment:
+            - KAFKA_TOPIC=test-topic
+            - KAFKA_URL=localhost:9092
+            - REDIS_URL=localhost:6379
+        ports:
+            - 44305:44305
+
+            
+    consumer:
+        network_mode: "host"
+        build: 
+            context: src/
+            dockerfile: Dockerfile-consumer
+        restart: always
+        environment:
+            - KAFKA_TOPIC=test-topic
+            - KAFKA_URL=localhost:9092
+            - REDIS_URL=localhost:6379
+            - CLIENT_GROUP=service-1
